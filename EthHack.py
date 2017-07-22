@@ -14,6 +14,6 @@ while True:
     address = "0x{}".format(keccak.hexdigest()[24:])
     balance = web3.eth.getBalance(address)
     if balance > 0:
-        f = open('~/EthHack/Results/'+address, 'w')
+        f = open(address, 'w')
         f.write("PRIVATE: {0}\nADDRESS: {1}\nBALANCE: {2}\n".format(private.to_string().hex(),address,balance))
         f.close()
