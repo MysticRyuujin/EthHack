@@ -24,8 +24,8 @@ def ethhack():
         except:
             balance = -1
         if balance != 0:
-            with open(address, 'w') as f:
-                f.write("PRIVATE: {0}\nADDRESS: {1}\nBALANCE: {2}\n".format(private, address, balance))
+            with open(address+'.txt', 'w') as f:
+                f.write("PRIVATE: {0}\nADDRESS: {1}\nBALANCE: {2}\n".format(private.to_string().hex(), address, balance))
             f.close()
 
 
