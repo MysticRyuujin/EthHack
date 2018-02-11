@@ -1,45 +1,18 @@
 #!/usr/bin/python3
-
 import sha3
 import multiprocessing
 import psutil
-import pyodbc
 import os
-import random
 from ecdsa import SigningKey, SECP256k1
 from web3 import Web3, KeepAliveRPCProvider
 
-# Configure SQL connection parameters
-# https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server
-# {ODBC Driver 13 for SQL Server}
-def sql_upload(private,address,balance):
-    try:
-        cnxn = pyodbc.connect(
-            driver='',
-            server='',
-            database='',
-            uid='',
-            pwd=''
-        )
-        cursor = cnxn.cursor()
-        values = "('{0}','{1}','{2}')".format(private, address, balance)
-        query = "BEGIN INSERT INTO Unverified (PRIVATE, ADDRESS, BALANCE) VALUES "+values+" END;"
-        cursor.execute(query)
-        cnxn.commit()
-        cursor.close()
-        cnxn.close()
-    except:
-        with open(address, 'w') as f:
-            f.write("PRIVATE: {0}\nADDRESS: {1}\nBALANCE: {2}\n".format(private, address, balance))
-        f.close()
+
+# Point to an RPC node
+ethNode = 'localhost'
 
 
 def ethhack():
-    # My ghetto load balancing
-    nodes = [Web3(KeepAliveRPCProvider(host='geth', port='8545')),
-             Web3(KeepAliveRPCProvider(host='parity', port='8545'))]
-    node = random.randint(0,1)
-    web3 = nodes[node]
+    web3 = Web3(KeepAliveRPCProvider(host=ethNode, port='8545', ssl=False))
     while True:
         keccak = sha3.keccak_256()
         private = SigningKey.generate(curve=SECP256k1)
@@ -49,14 +22,11 @@ def ethhack():
         try:
             balance = web3.eth.getBalance(address)
         except:
-            try:
-                web3 = nodes[int(not node)]
-                balance = web3.eth.getBalance(address)
-            except:
-                balance = 1000000000000000000
-        if balance > 0:
-            balance = balance / 1000000000000000000
-            sql_upload(private.to_string().hex(),address,balance)
+            balance = -1
+        if balance != 0:
+            with open(address, 'w') as f:
+                f.write("PRIVATE: {0}\nADDRESS: {1}\nBALANCE: {2}\n".format(private, address, balance))
+            f.close()
 
 
 if __name__ == "__main__":
