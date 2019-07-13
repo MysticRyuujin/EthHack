@@ -1,4 +1,4 @@
-# This requires Netherum DLL files
+# This requires Nethereum DLL files
 # https://github.com/Nethereum/Nethereum/releases
 
 $block = {
