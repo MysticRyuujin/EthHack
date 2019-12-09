@@ -14,32 +14,27 @@ function Optimize-ETHPeers {
     }
     
     process {
+        # Get all of the current peers
         foreach ($Node in $Nodes) {
-            $Peers = (Get-ETHPeers -Node $Node).enode -as [System.Collections.Generic.List[string]]
-            $PeerDict.Add($Node,$Peers)
-        }
-        for ($i=0; $i -lt $Nodes.Count; $i++) {
-            # When dealing with the last node ($node[-1]) target first node ($node[0])
-            if (($i + 1) -eq $Nodes.Count) {
-                $a = 0
-            } else {
-                $a = $i+1
-            }
-            Compare-Object -ReferenceObject $PeerDict."$($Nodes[$i])" -DifferenceObject $PeerDict."$($Nodes[$a])" -ExcludeDifferent -IncludeEqual | ForEach-Object {
-                # Ignore Private IP Space (we want local nodes peered)
-                if ($_.InputObject -match "@192\.168|@172\.1[6-9]\.|@172\.2[0-9]\.|172.3[0-2]\.|@10\.") {
-                    continue
+            $Peers = (Get-ETHPeers -Node $Node).enode
+            ForEach ($Peer in $Peers) {
+                if ($PeerDict.$Peer) {
+                    $PeerDict.$Peer.Add($Node)
+                } else {
+                    $PeerDict.Add($Peer,$Node -as [System.Collections.Generic.List[string]])
                 }
-                # Remove the node randomly (helps prevent node[1] from lossing too many peers)
-                $b = Get-Random ($i,$a)
-                Write-Host "Removing $($_.InputObject) from $($Nodes[$b])" -ForegroundColor Cyan
-                try {
-                    Remove-ETHPeer -Node $Nodes[$b] -Peer $_.InputObject
-                    $null = $PeerDict."$($Nodes[$b])".Remove($_.InputObject)
-                    Write-Host "Success" -ForegroundColor Green
-                } catch { 
-                    Write-Host "Failed" -ForegroundColor Red
-                    continue
+            }
+        }
+        ForEach ($Peer in $PeerDict.Keys) {
+            if ($PeerDict.$Peer.Count -gt 1) {
+                Get-Random ($PeerDict.$Peer -as [array]) -Count ($PeerDict.$Peer.Count - 1) | ForEach-Object {
+                    Write-Host "Removing $Peer from $_" -ForegroundColor Cyan
+                    try {
+                        Remove-ETHPeer -Node $_ -Peer $Peer
+                        Write-Host "Success" -ForegroundColor Green
+                    } catch {
+                        Write-Host "Failed" -ForegroundColor Red
+                    }
                 }
             }
         }
