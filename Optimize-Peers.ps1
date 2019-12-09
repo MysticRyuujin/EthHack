@@ -26,6 +26,10 @@ function Optimize-ETHPeers {
             }
         }
         ForEach ($Peer in $PeerDict.Keys) {
+            # Ignore Private IP Space (we want local nodes peered)
+            if ($Peer -match "@192\.168|@172\.1[6-9]\.|@172\.2[0-9]\.|172.3[0-2]\.|@10\.") {
+                continue
+            }
             if ($PeerDict.$Peer.Count -gt 1) {
                 Get-Random ($PeerDict.$Peer -as [array]) -Count ($PeerDict.$Peer.Count - 1) | ForEach-Object {
                     Write-Host "Removing $Peer from $_" -ForegroundColor Cyan
