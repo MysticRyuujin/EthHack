@@ -65,6 +65,9 @@ for ($i=1; $i -le $MaxPages; $i++) {
     }
 }
 
+# Loop through all of the discovered enodes and try to add them
+# You could also just run the below to output to a file:
+# $NodeList | ConvertTo-JSON | Out-File "static-nodes.json"
 ForEach ($Enode in $NodeList) {
     Add-ETHPeer -Node $MyNode -Peer $Enode
 }
