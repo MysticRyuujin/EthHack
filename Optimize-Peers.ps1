@@ -16,27 +16,50 @@ function Optimize-ETHPeers {
     process {
         # Get all of the current peers
         foreach ($Node in $Nodes) {
-            $Peers = (Get-ETHPeers -Node $Node).enode
+            $Peers = (Get-ETHPeers -Nodes $Node).enode
             ForEach ($Peer in $Peers) {
-                if ($PeerDict.$Peer) {
-                    $PeerDict.$Peer.Add($Node)
-                } else {
-                    $PeerDict.Add($Peer,$Node -as [System.Collections.Generic.List[string]])
+                if ($Peer -match "enode://(.*)@(.*):(.*)") {
+                    $Enode = $Matches[1]
+                    $IP = $Matches[2]
+                    $Port = $Matches[3]
+                    if ($PeerDict.$Enode) {
+                        $PeerDict.$Enode.Add(
+                            @{
+                                "Node" = $Node
+                                "IP" = $IP
+                                "Port" = $Port
+                            }
+                        )
+                    }
+                    else {
+                        $PeerDict.Add(
+                            $Enode,
+                            [System.Collections.Generic.List[Hashtable]]::new()
+                        )
+                        $PeerDict.$Enode.Add(
+                            @{
+                                "Node" = $Node
+                                "IP" = $IP
+                                "Port" = $Port
+                            }
+                        )
+                    }
                 }
             }
         }
         ForEach ($Peer in $PeerDict.Keys) {
             # Ignore Private IP Space (we want local nodes peered)
-            if ($Peer -match "@192\.168|@172\.1[6-9]\.|@172\.2[0-9]\.|172.3[0-2]\.|@10\.") {
+            if ($PeerDict.$Peer.IP -match "@192\.168|@172\.1[6-9]\.|@172\.2[0-9]\.|172.3[0-2]\.|@10\.") {
                 continue
             }
             if ($PeerDict.$Peer.Count -gt 1) {
                 Get-Random ($PeerDict.$Peer -as [array]) -Count ($PeerDict.$Peer.Count - 1) | ForEach-Object {
-                    Write-Host "Removing $Peer from $_" -ForegroundColor Cyan
+                    Write-Host "Removing $Peer from $($_.Node)" -ForegroundColor Cyan
                     try {
-                        Remove-ETHPeer -Node $_ -Peer $Peer
+                        $null = Remove-ETHPeers -Node $_.Node -Peers "enode://$Peer@$($_.IP):$($_.Port)"
                         Write-Host "Success" -ForegroundColor Green
-                    } catch {
+                    }
+                    catch {
                         Write-Host "Failed" -ForegroundColor Red
                     }
                 }
@@ -48,39 +71,43 @@ function Optimize-ETHPeers {
 function Get-ETHPeers {
     [CmdletBinding()]
     param (
-        $Node
+        [Alias("Node")]
+        [uri[]]$Nodes
     )
-    
     begin {
         $Body = @{
             "jsonrpc" = "2.0"
-            "method" = "admin_peers"
-            "id" = Get-Random
+            "method"  = "admin_peers"
+            "id"      = Get-Random
         }
     }
-    
     process {
-        (Invoke-RestMethod -Method Post -Uri $Node -Body ($Body | ConvertTo-Json) -ContentType 'application/json').result
+        ForEach ($Node in $Nodes) {
+            (Invoke-RestMethod -Method Post -Uri $Node -Body ($Body | ConvertTo-Json) -ContentType 'application/json').result
+        }
     }
 }
 
-function Remove-ETHPeer {
+function Remove-ETHPeers {
     [CmdletBinding()]
     param (
-        $Node,
-        $Peer
-    )
+        [uri]$Node,
 
+        [Alias("Peer")]
+        [uri[]]$Peers
+    )
     begin {
         $Body = @{
             "jsonrpc" = "2.0"
-            "method" = "admin_removePeer"
-            "params" = $Peer -as [array]
-            "id" = Get-Random
+            "method"  = "admin_removePeer"
+            "params"  = [System.Object]::new()
+            "id"      = Get-Random
         }
     }
-
     process {
-        $null = (Invoke-RestMethod -Method Post -Uri $Node -Body ($Body | ConvertTo-Json) -ContentType 'application/json')
+        ForEach ($Peer in $Peers) {
+            $Body.params = $Peer -as [array]
+            (Invoke-RestMethod -Method Post -Uri $Node -Body ($Body | ConvertTo-Json) -ContentType 'application/json').result
+        }
     }
 }
