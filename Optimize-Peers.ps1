@@ -22,28 +22,16 @@ function Optimize-ETHPeers {
                     $Enode = $Matches[1]
                     $IP = $Matches[2]
                     $Port = $Matches[3]
-                    if ($PeerDict.$Enode) {
-                        $PeerDict.$Enode.Add(
-                            @{
-                                "Node" = $Node
-                                "IP" = $IP
-                                "Port" = $Port
-                            }
-                        )
+                    if (!$PeerDict.$Enode) {
+                        $PeerDict.Add($Enode,[System.Collections.Generic.List[Hashtable]]::new())
                     }
-                    else {
-                        $PeerDict.Add(
-                            $Enode,
-                            [System.Collections.Generic.List[Hashtable]]::new()
-                        )
-                        $PeerDict.$Enode.Add(
-                            @{
-                                "Node" = $Node
-                                "IP" = $IP
-                                "Port" = $Port
-                            }
-                        )
-                    }
+                    $PeerDict.$Enode.Add(
+                        @{
+                            "Node" = $Node
+                            "IP" = $IP
+                            "Port" = $Port
+                        }
+                    )
                 }
             }
         }
