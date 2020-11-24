@@ -330,7 +330,7 @@ cluster:
     - id: AVADO
       chain: ethereum
       labels:
-        provider: OpenEthereum
+        provider: Geth
         archive: false
       methods:
         enabled:
