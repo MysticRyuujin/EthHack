@@ -131,6 +131,7 @@ cluster:
           - name: eth_accounts
           - name: eth_blockNumber
           - name: eth_call
+          - name: eth_chainId
           - name: eth_estimateGas
           - name: eth_gasPrice
           - name: eth_getBalance
@@ -167,8 +168,6 @@ cluster:
           - name: eth_uninstallFilter
           - name: eth_subscribe
           - name: eth_unsubscribe
-        disabled:
-          - name: eth_chainId # Cloudflare currently doesn't suppor this :(
       connection:
         ethereum:
           rpc:
